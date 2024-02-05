@@ -1,10 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <PackageId>LogFlake-Client-NetStandard</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>CloudPhoenix Srl</Authors>
+    <Company>CloudPhoenix Srl</Company>
     <TargetFramework>netstandard2.0</TargetFramework>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/CloudPhoenix/logflake-client-netstandard</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
