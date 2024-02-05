@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>logflake-netstandard</id>
+    <version>1.0.0</version>
+    <title>LogFlake NetStandard</title>
+    <authors>CloudPhoenix Srl</authors>
+    <owners>CloudPhoenix Srl</owners>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>LogFlake dotNet Client</description>
+    <releaseNotes>LogFlake</releaseNotes>
+    <copyright>2023-2024 CloudPhoenix Srl</copyright>
+    <tags>LogFlake</tags>
+    <dependencies>
+      <group targetFramework="net452">
+        <dependency id="Newtonsoft.Json" version="13.0.2" />
+        <dependency id="System.Net.Http" version="4.0.0" />
+        <dependency id="Ben.Demystifier" version="0.4.1" />
+      </group>
+      <group targetFramework="net462">
+        <dependency id="Newtonsoft.Json" version="13.0.2" />
+        <dependency id="System.Net.Http" version="4.2.0" />
+        <dependency id="Ben.Demystifier" version="0.4.1" />
+      </group>
+      <group targetFramework="net472">
+        <dependency id="Newtonsoft.Json" version="13.0.2" />
+        <dependency id="System.Net.Http" version="4.2.0" />
+        <dependency id="Ben.Demystifier" version="0.4.1" />
+      </group>
+      <group targetFramework="netstandard2.0">
+        <dependency id="Newtonsoft.Json" version="13.0.2" />
+        <dependency id="Ben.Demystifier" version="0.4.1" />
+      </group>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="bin\Release\net452\LogFlake.dll" target="lib\net452\LogFlake.dll" />
+    <file src="bin\Release\net462\LogFlake.dll" target="lib\net462\LogFlake.dll" />
+    <file src="bin\Release\net472\LogFlake.dll" target="lib\net472\LogFlake.dll" />
+    <file src="bin\Release\netstandard2.0\LogFlake.dll" target="lib\netstandard2.0\LogFlake.dll" />
+  </files>
+</package>
