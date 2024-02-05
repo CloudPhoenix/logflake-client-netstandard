@@ -15,10 +15,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Models\" />
-  </ItemGroup>
-  <ItemGroup>
     <Folder Include="Models\" />
+    <None Include="README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Ben.Demystifier" Version="0.4.1" />
