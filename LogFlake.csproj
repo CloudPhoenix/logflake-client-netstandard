@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <PackageId>LogFlake-Client-NetStandard</PackageId>
+    <PackageId>LogFlake.Client.NetStandard</PackageId>
     <Version>1.0.0</Version>
     <Authors>CloudPhoenix Srl</Authors>
     <Company>CloudPhoenix Srl</Company>
@@ -10,6 +10,8 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/CloudPhoenix/logflake-client-netstandard</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>LogFlake;CloudPhoenix;Cloud Phoenix;Log Flake;Log;Logs</PackageTags>
+    <Description>LogFlake Client .net Standard</Description>
   </PropertyGroup>
 
   <ItemGroup>
