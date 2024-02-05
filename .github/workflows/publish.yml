@@ -19,4 +19,4 @@ jobs:
         shell: bash
       - name: Publish NuGet Package
         shell: bash
-        run: dotnet nuget push bin/Release/*.nupkg --api-key {{ secrets.NUGET_APIKEY }} --source https://api.nuget.org/v3/index.json
+        run: dotnet nuget push bin/Release/*.nupkg --skip-duplicate --api-key ${{ secrets.NUGET_APIKEY }} --source https://api.nuget.org/v3/index.json
