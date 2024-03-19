@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace LogFlake.Models
+namespace NLogFlake.Models
 {
 	internal class LogObject
     {

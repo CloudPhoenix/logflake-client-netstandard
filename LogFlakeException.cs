@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 
-namespace LogFlake
+namespace NLogFlake
 {
     [Serializable]
     public class LogFlakeException : ApplicationException

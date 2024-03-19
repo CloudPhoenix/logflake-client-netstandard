@@ -1,4 +1,4 @@
-﻿namespace LogFlake.Models
+﻿namespace NLogFlake.Models
 {
     internal class PendingLog
     {

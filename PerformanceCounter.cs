@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics;
 
-namespace LogFlake
+namespace NLogFlake
 {
     public class PerformanceCounter
     {

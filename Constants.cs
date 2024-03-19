@@ -1,4 +1,4 @@
-﻿namespace LogFlake
+﻿namespace NLogFlake
 {
     public static class Servers
     {
