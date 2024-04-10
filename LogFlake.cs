@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using NLogFlake.Models;
+using Snappier;
 
 namespace NLogFlake
 {
@@ -24,6 +25,7 @@ namespace NLogFlake
 
         public int FailedPostRetries { get; set; } = 3;
         public int PostTimeoutSeconds { get; set; } = 3;
+        public bool EnableCompression { get; set; } = true; 
 
         public void SetHostname() => SetHostname(null);
 
@@ -72,11 +74,26 @@ namespace NLogFlake
             {
                 using (var client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Add("User-Agent", "logflake-client-netstandard/1.3.0");
+                    client.DefaultRequestHeaders.Add("User-Agent", "logflake-client-netstandard/1.4.1");
                     client.BaseAddress = new Uri($"{Server}");
                     client.Timeout = TimeSpan.FromSeconds(PostTimeoutSeconds);
-                    var json = new StringContent(jsonString, Encoding.UTF8, "application/json");
-                    var result = await client.PostAsync($"/api/ingestion/{AppId}/{queueName}", json);
+                    var requestUri = $"/api/ingestion/{AppId}/{queueName}";
+                    HttpResponseMessage result;
+                    if (EnableCompression)
+                    {
+                        var jsonStringBytes = Encoding.UTF8.GetBytes(jsonString);
+                        var base64String = Convert.ToBase64String(jsonStringBytes);
+                        var compressed = Snappy.CompressToArray(Encoding.UTF8.GetBytes(base64String));
+                        var content = new ByteArrayContent(compressed);
+                        content.Headers.Remove("Content-Type");
+                        content.Headers.Add("Content-Type", "application/octet-stream");
+                        result = await client.PostAsync(requestUri, content);
+                    }
+                    else
+                    {
+                        var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
+                        result = await client.PostAsync(requestUri, content);
+                    }
                     return result.IsSuccessStatusCode;
                 }
             }
