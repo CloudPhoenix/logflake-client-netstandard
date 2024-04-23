@@ -74,7 +74,8 @@ namespace NLogFlake
             {
                 using (var client = new HttpClient())
                 {
-                    client.DefaultRequestHeaders.Add("User-Agent", "logflake-client-netstandard/1.4.1");
+                    client.DefaultRequestHeaders.Add("User-Agent", "logflake-client-netstandard/1.4.2");
+                    client.DefaultRequestHeaders.Add("Accept", "application/json");
                     client.BaseAddress = new Uri($"{Server}");
                     client.Timeout = TimeSpan.FromSeconds(PostTimeoutSeconds);
                     var requestUri = $"/api/ingestion/{AppId}/{queueName}";
