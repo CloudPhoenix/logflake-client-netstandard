@@ -1,174 +1,186 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+using System.Text.Json;
+using Microsoft.Extensions.Options;
+using NLogFlake.Constants;
 using NLogFlake.Models;
+using NLogFlake.Models.Options;
 using Snappier;
 
-namespace NLogFlake
+namespace NLogFlake;
+
+internal class LogFlake : ILogFlake
 {
-    public class LogFlake
+    private Uri Server { get; set; }
+    private string? _hostname = Environment.MachineName;
+    private string AppId { get; set; }
+
+    private readonly ConcurrentQueue<PendingLog> _logsQueue = new();
+    private readonly ManualResetEvent _processLogs = new(false);
+    private readonly HttpClient _httpClient;
+
+    private Thread LogsProcessorThread { get; set; }
+    private bool IsShuttingDown { get; set; }
+
+    internal int FailedPostRetries { get; set; } = 3;
+    internal int PostTimeoutSeconds { get; set; } = 3;
+    internal bool EnableCompression { get; set; } = true;
+
+    internal void SetHostname() => SetHostname(null);
+
+    internal string? GetHostname() => _hostname;
+
+    internal void SetHostname(string? hostname) => _hostname = string.IsNullOrWhiteSpace(hostname) ? null : hostname;
+
+    public LogFlake(IOptions<LogFlakeOptions> logFlakeOptions, IHttpClientFactory httpClientFactory)
     {
-        private string Server { get; set; } = Servers.PRODUCTION;
-        private string _hostname = Environment.MachineName;
-        private string AppId { get; set; }
+        AppId = logFlakeOptions.Value.AppId!;
 
-        private readonly ConcurrentQueue<PendingLog> _logsQueue = new ConcurrentQueue<PendingLog>();
-        private readonly ManualResetEvent _processLogs = new ManualResetEvent(false);
-        private Thread LogsProcessorThread { get; set; }
-        private bool IsShuttingDown { get; set; }
+        Server = logFlakeOptions.Value.Endpoint ?? new Uri(ServersConstants.PRODUCTION);
 
-        public int FailedPostRetries { get; set; } = 3;
-        public int PostTimeoutSeconds { get; set; } = 3;
-        public bool EnableCompression { get; set; } = true; 
+        LogsProcessorThread = new Thread(LogsProcessor);
+        LogsProcessorThread.Start();
 
-        public void SetHostname() => SetHostname(null);
-
-        public string GetHostname() => _hostname;
-
-        public void SetHostname(string hostname) => _hostname = string.IsNullOrEmpty(hostname) ? null : hostname;
-
-        public LogFlake(string appId, string logFlakeServer) : this(appId) => Server = logFlakeServer;
-
-        public LogFlake(string appId)
+        _httpClient = new HttpClient
         {
-            if (appId.Length == 0) throw new LogFlakeException("appId missing");
-            AppId = appId;
-            LogsProcessorThread = new Thread(LogsProcessor);
-            LogsProcessorThread.Start();
-        }
-
-        ~LogFlake() => Shutdown();
-
-        public void Shutdown()
-        {
-            IsShuttingDown = true;
-            LogsProcessorThread.Join();
-        }
-
-        private void LogsProcessor()
-        {
-            SendLog(LogLevels.DEBUG, $"LogFlake started on {_hostname}");
-            _processLogs.WaitOne();
-            while (!_logsQueue.IsEmpty)
-            {
-                // Process log
-                _logsQueue.TryDequeue(out var log);
-                log.Retries++;
-                var success = Post(log.QueueName, log.JsonString).Result;
-                if (!success && log.Retries < FailedPostRetries) _logsQueue.Enqueue(log);
-                _processLogs.Reset();
-                if (_logsQueue.IsEmpty && !IsShuttingDown) _processLogs.WaitOne();
-            }
-        }
-
-        private async Task<bool> Post(string queueName, string jsonString)
-        {
-            if (queueName != Queues.LOGS && queueName != Queues.PERFORMANCES) return false;
-            try
-            {
-                using (var client = new HttpClient())
-                {
-                    client.DefaultRequestHeaders.Add("User-Agent", "logflake-client-netstandard/1.4.2");
-                    client.DefaultRequestHeaders.Add("Accept", "application/json");
-                    client.BaseAddress = new Uri($"{Server}");
-                    client.Timeout = TimeSpan.FromSeconds(PostTimeoutSeconds);
-                    var requestUri = $"/api/ingestion/{AppId}/{queueName}";
-                    HttpResponseMessage result;
-                    if (EnableCompression)
-                    {
-                        var jsonStringBytes = Encoding.UTF8.GetBytes(jsonString);
-                        var base64String = Convert.ToBase64String(jsonStringBytes);
-                        var compressed = Snappy.CompressToArray(Encoding.UTF8.GetBytes(base64String));
-                        var content = new ByteArrayContent(compressed);
-                        content.Headers.Remove("Content-Type");
-                        content.Headers.Add("Content-Type", "application/octet-stream");
-                        result = await client.PostAsync(requestUri, content);
-                    }
-                    else
-                    {
-                        var content = new StringContent(jsonString, Encoding.UTF8, "application/json");
-                        result = await client.PostAsync(requestUri, content);
-                    }
-                    return result.IsSuccessStatusCode;
-                }
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        public void SendLog(string content, Dictionary<string, object> parameters = null) =>
-            SendLog(LogLevels.DEBUG, content, parameters);
-
-        public void SendLog(LogLevels level, string content, Dictionary<string, object> parameters = null) =>
-            SendLog(level, null, content, parameters);
-
-        public void SendLog(LogLevels level, string correlation, string content,
-            Dictionary<string, object> parameters = null)
-        {
-            _logsQueue.Enqueue(new PendingLog
-            {
-                QueueName = Queues.LOGS,
-                JsonString = new LogObject
-                {
-                    Level = level,
-                    Hostname = GetHostname(),
-                    Content = content,
-                    Correlation = correlation,
-                    Parameters = parameters
-                }.ToString()
-            });
-            _processLogs.Set();
-        }
-
-        public void SendException(Exception e) =>
-            SendException(e, null);
-
-        public void SendException(Exception e, string correlation)
-        {
-            var additionalTrace = new StringBuilder();
-            if (e.Data.Count > 0)
-            {
-                additionalTrace.Append($"{Environment.NewLine}Data:");
-                additionalTrace.Append(
-                    $"{Environment.NewLine}{JsonConvert.SerializeObject(e.Data, Formatting.Indented)}");
-            }
-
-            _logsQueue.Enqueue(new PendingLog
-            {
-                QueueName = Queues.LOGS,
-                JsonString = new LogObject
-                {
-                    Level = LogLevels.EXCEPTION,
-                    Hostname = GetHostname(),
-                    Content = $"{e.Demystify()}{additionalTrace}",
-                    Correlation = correlation
-                }.ToString()
-            });
-            _processLogs.Set();
-        }
-
-        public void SendPerformance(string label, long duration)
-        {
-            _logsQueue.Enqueue(new PendingLog
-            {
-                QueueName = Queues.PERFORMANCES,
-                JsonString = new LogObject
-                {
-                    Label = label,
-                    Duration = duration
-                }.ToString()
-            });
-            _processLogs.Set();
-        }
-
-        public PerformanceCounter MeasurePerformance(string label) => new PerformanceCounter(this, label);
+            BaseAddress = Server,
+            Timeout = TimeSpan.FromSeconds(PostTimeoutSeconds),
+        };
+        _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", "logflake-client-netcore/1.4.2");
     }
+
+    ~LogFlake() => Shutdown();
+
+    public void Shutdown()
+    {
+        IsShuttingDown = true;
+        LogsProcessorThread.Join();
+    }
+
+    private void LogsProcessor()
+    {
+        SendLog(LogLevels.DEBUG, $"LogFlake started on {_hostname}");
+
+        _processLogs.WaitOne();
+
+        while (!_logsQueue.IsEmpty)
+        {
+            _ = _logsQueue.TryDequeue(out PendingLog? log);
+            log.Retries++;
+            bool success = Post(log.QueueName!, log.JsonString!).Result;
+            if (!success && log.Retries < FailedPostRetries)
+            {
+                _logsQueue.Enqueue(log);
+            }
+
+            _processLogs.Reset();
+
+            if (_logsQueue.IsEmpty && !IsShuttingDown)
+            {
+                _processLogs.WaitOne();
+            }
+        }
+    }
+
+    private async Task<bool> Post(string queueName, string jsonString)
+    {
+        if (queueName != QueuesConstants.LOGS && queueName != QueuesConstants.PERFORMANCES)
+        {
+            return false;
+        }
+
+        try
+        {
+            string requestUri = $"/api/ingestion/{AppId}/{queueName}";
+            HttpResponseMessage result;
+            if (EnableCompression)
+            {
+                byte[] jsonStringBytes = Encoding.UTF8.GetBytes(jsonString);
+                string base64String = Convert.ToBase64String(jsonStringBytes);
+                byte[] compressed = Snappy.CompressToArray(Encoding.UTF8.GetBytes(base64String));
+                ByteArrayContent content = new(compressed);
+                content.Headers.Remove("Content-Type");
+                content.Headers.Add("Content-Type", "application/octet-stream");
+                result = await _httpClient.PostAsync(requestUri, content);
+            }
+            else
+            {
+                StringContent content = new(jsonString, Encoding.UTF8, "application/json");
+                result = await _httpClient.PostAsync(requestUri, content);
+            }
+
+            return result.IsSuccessStatusCode;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    public void SendLog(string content, Dictionary<string, object>? parameters = null) => SendLog(LogLevels.DEBUG, content, parameters);
+
+    public void SendLog(LogLevels level, string content, Dictionary<string, object>? parameters = null) => SendLog(level, null, content, parameters);
+
+    public void SendLog(LogLevels level, string? correlation, string? content, Dictionary<string, object>? parameters = null)
+    {
+        _logsQueue.Enqueue(new PendingLog
+        {
+            QueueName = QueuesConstants.LOGS,
+            JsonString = new LogObject
+            {
+                Level = level,
+                Hostname = GetHostname(),
+                Content = content!,
+                Correlation = correlation,
+                Parameters = parameters,
+            }.ToString()
+        });
+
+        _processLogs.Set();
+    }
+
+    public void SendException(Exception e) => SendException(e, null);
+
+    public void SendException(Exception e, string? correlation)
+    {
+        StringBuilder additionalTrace = new();
+        if (e.Data.Count > 0)
+        {
+            additionalTrace.Append($"{Environment.NewLine}Data:");
+            additionalTrace.Append($"{Environment.NewLine}{JsonSerializer.Serialize(e.Data, new JsonSerializerOptions { WriteIndented = true })}");
+        }
+
+        _logsQueue.Enqueue(new PendingLog
+        {
+            QueueName = QueuesConstants.LOGS,
+            JsonString = new LogObject
+            {
+                Level = LogLevels.EXCEPTION,
+                Hostname = GetHostname(),
+                Content = $"{e.Demystify()}{additionalTrace}",
+                Correlation = correlation,
+            }.ToString()
+        });
+
+        _processLogs.Set();
+    }
+
+    public void SendPerformance(string label, long duration)
+    {
+        _logsQueue.Enqueue(new PendingLog
+        {
+            QueueName = QueuesConstants.PERFORMANCES,
+            JsonString = new LogObject
+            {
+                Label = label,
+                Duration = duration,
+            }.ToString()
+        });
+
+        _processLogs.Set();
+    }
+
+    public IPerformanceCounter MeasurePerformance(string label) => new PerformanceCounter(this, label);
 }
