@@ -1,39 +1,46 @@
 ﻿using System.Diagnostics;
 
-namespace NLogFlake
+namespace NLogFlake;
+
+internal class PerformanceCounter : IPerformanceCounter
 {
-    public class PerformanceCounter
+    private readonly LogFlake _instance;
+    private readonly string _label;
+    private readonly Stopwatch _internalStopwatch;
+
+    private bool AlreadySent { get; set; }
+
+    internal PerformanceCounter(LogFlake instance, string label)
     {
-        private readonly LogFlake _instance;
-        private readonly string _label;
-        private readonly Stopwatch _internalSw;
+        _instance = instance;
+        _label = label;
+        _internalStopwatch = Stopwatch.StartNew();
+    }
 
-        private bool AlreadySent { get; set; }
+    ~PerformanceCounter()
+    {
+        if (!AlreadySent) Stop();
+    }
 
-        public PerformanceCounter(LogFlake instance, string label)
+    public void Start() => _internalStopwatch.Start();
+
+    public void Restart() => _internalStopwatch.Restart();
+
+    public long Stop() => Stop(true);
+
+    public long Pause() => Stop(false);
+
+    private long Stop(bool shouldSend)
+    {
+        _internalStopwatch.Stop();
+        if (!shouldSend)
         {
-            _instance = instance;
-            _label = label;
-            _internalSw = Stopwatch.StartNew();
+            return _internalStopwatch.ElapsedMilliseconds;
         }
 
-        ~PerformanceCounter()
-        {
-            if (!AlreadySent) Stop();
-        }
+        AlreadySent = true;
+        _instance.SendPerformance(_label, _internalStopwatch.ElapsedMilliseconds);
 
-        public void Start() => _internalSw.Start();
-        public void Restart() => _internalSw.Restart();
-        public long Stop() => Stop(true);
-        public long Pause() => Stop(false);
-
-        private long Stop(bool shouldSend)
-        {
-            _internalSw.Stop();
-            if (!shouldSend) return _internalSw.ElapsedMilliseconds;
-            AlreadySent = true;
-            _instance.SendPerformance(_label, _internalSw.ElapsedMilliseconds);
-            return _internalSw.ElapsedMilliseconds;
-        }
+        return _internalStopwatch.ElapsedMilliseconds;
     }
 }
