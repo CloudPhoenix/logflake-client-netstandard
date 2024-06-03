@@ -48,7 +48,7 @@ internal class LogFlake : ILogFlake
             Timeout = TimeSpan.FromSeconds(PostTimeoutSeconds),
         };
         _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", "logflake-client-netcore/1.4.2");
+        _httpClient.DefaultRequestHeaders.Add("User-Agent", "logflake-client-netcore/1.5.0");
     }
 
     ~LogFlake() => Shutdown();
