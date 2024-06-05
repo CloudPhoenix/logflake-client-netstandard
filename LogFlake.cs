@@ -62,7 +62,7 @@ internal class LogFlake : ILogFlake
         {
             _ = _logsQueue.TryDequeue(out PendingLog? log);
             log.Retries++;
-            bool success = Post(log.QueueName!, log.JsonString!).Result;
+            bool success = Post(log.QueueName!, log.JsonString!).GetAwaiter().GetResult();
             if (!success && log.Retries < FailedPostRetries)
             {
                 _logsQueue.Enqueue(log);
@@ -87,7 +87,7 @@ internal class LogFlake : ILogFlake
         try
         {
             string requestUri = $"/api/ingestion/{AppId}/{queueName}";
-            HttpResponseMessage result;
+            HttpResponseMessage result = new(System.Net.HttpStatusCode.InternalServerError);
             using HttpClient httpClient = _httpClientFactory.CreateClient(HttpClientConstants.ClientName);
             httpClient.BaseAddress = Server;
             if (EnableCompression)
