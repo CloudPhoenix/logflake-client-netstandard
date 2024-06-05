@@ -5,15 +5,12 @@ using NLogFlake.Services;
 
 namespace NLogFlake;
 
-public static class IServicesExtensions
+public static class IServiceCollectionExtensions
 {
     public static IServiceCollection AddLogFlake(this IServiceCollection services, IConfiguration configuration)
     {
         _ = services.Configure<LogFlakeOptions>(configuration.GetSection(LogFlakeOptions.SectionName))
             .AddOptionsWithValidateOnStart<LogFlakeOptions, LogFlakeOptionsValidator>();
-
-        _ = services.Configure<LogFlakeSettingsOptions>(configuration.GetSection(LogFlakeSettingsOptions.SectionName))
-            .AddOptionsWithValidateOnStart<LogFlakeSettingsOptions, LogFlakeSettingsOptionsValidator>();
 
         services.AddHttpClient();
 

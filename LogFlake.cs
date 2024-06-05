@@ -18,13 +18,12 @@ internal class LogFlake : ILogFlake
 
     private readonly ConcurrentQueue<PendingLog> _logsQueue = new();
     private readonly ManualResetEvent _processLogs = new(false);
-    private readonly HttpClient _httpClient;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     private Thread LogsProcessorThread { get; set; }
     private bool IsShuttingDown { get; set; }
 
     internal int FailedPostRetries { get; set; } = 3;
-    internal int PostTimeoutSeconds { get; set; } = 3;
     internal bool EnableCompression { get; set; } = true;
 
     internal void SetHostname() => SetHostname(null);
@@ -42,13 +41,7 @@ internal class LogFlake : ILogFlake
         LogsProcessorThread = new Thread(LogsProcessor);
         LogsProcessorThread.Start();
 
-        _httpClient = new HttpClient
-        {
-            BaseAddress = Server,
-            Timeout = TimeSpan.FromSeconds(PostTimeoutSeconds),
-        };
-        _httpClient.DefaultRequestHeaders.Add("Accept", "application/json");
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", "logflake-client-netcore/1.5.0");
+        _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
     }
 
     ~LogFlake() => Shutdown();
@@ -95,6 +88,8 @@ internal class LogFlake : ILogFlake
         {
             string requestUri = $"/api/ingestion/{AppId}/{queueName}";
             HttpResponseMessage result;
+            using HttpClient httpClient = _httpClientFactory.CreateClient(HttpClientConstants.ClientName);
+            httpClient.BaseAddress = Server;
             if (EnableCompression)
             {
                 byte[] jsonStringBytes = Encoding.UTF8.GetBytes(jsonString);
@@ -103,12 +98,12 @@ internal class LogFlake : ILogFlake
                 ByteArrayContent content = new(compressed);
                 content.Headers.Remove("Content-Type");
                 content.Headers.Add("Content-Type", "application/octet-stream");
-                result = await _httpClient.PostAsync(requestUri, content);
+                result = await httpClient.PostAsync(requestUri, content);
             }
             else
             {
                 StringContent content = new(jsonString, Encoding.UTF8, "application/json");
-                result = await _httpClient.PostAsync(requestUri, content);
+                result = await httpClient.PostAsync(requestUri, content);
             }
 
             return result.IsSuccessStatusCode;
