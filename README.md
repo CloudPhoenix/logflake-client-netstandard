@@ -1,4 +1,4 @@
-<h1 align="center">LogFlake Client .NET Standard <img alt="Version" src="https://img.shields.io/badge/version-1.0.0-blue.svg?cacheSeconds=2592000" /></h1>
+<h1 align="center">LogFlake Client .NET Standard <img alt="Version" src="https://img.shields.io/badge/version-1.5.1-blue.svg?cacheSeconds=2592000" /></h1>
 
 > This repository contains the sources for the client-side components of the LogFlake product suite for applications logs and performance collection for .NET applications.
 

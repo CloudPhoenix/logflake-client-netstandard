@@ -15,7 +15,7 @@ public class LogFlakeService : ILogFlakeService
 
     public void WriteLog(LogLevels logLevel, string? message, string? correlation, Dictionary<string, object>? parameters = null)
     {
-        parameters?.Add("Assembly version", _version);
+        parameters?.Add("assemblyVersion", _version);
 
         _logFlake.SendLog(logLevel, correlation, message, parameters);
     }
