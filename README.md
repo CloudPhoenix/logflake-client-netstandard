@@ -1,8 +1,8 @@
-<h1 align="center">LogFlake Client .NET Standard <img alt="Version" src="https://img.shields.io/badge/version-1.5.1-blue.svg?cacheSeconds=2592000" /></h1>
+# LogFlake Client .NET Standard ![Version](https://img.shields.io/badge/version-1.5.2-blue.svg?cacheSeconds=2592000)
 
 > This repository contains the sources for the client-side components of the LogFlake product suite for applications logs and performance collection for .NET applications.
 
-<h3 align="center">🏠 <a href="https://logflake.io">LogFlake Website</a> |  🔥 <a href="https://cloudphoenix.it">CloudPhoenix Website</a></h3>
+### 🏠 [LogFlake Website](https://logflake.io) |  🔥 [CloudPhoenix Website](https://cloudphoenix.it)
 
 ## Downloads
 
