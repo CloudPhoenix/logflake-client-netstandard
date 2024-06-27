@@ -10,7 +10,7 @@ using Snappier;
 
 namespace NLogFlake;
 
-internal class LogFlake : ILogFlake
+public class LogFlake : ILogFlake
 {
     private Uri Server { get; set; }
     private string? _hostname = Environment.MachineName;
@@ -26,11 +26,11 @@ internal class LogFlake : ILogFlake
     internal int FailedPostRetries { get; set; } = 3;
     internal bool EnableCompression { get; set; } = true;
 
-    internal void SetHostname() => SetHostname(null);
+    public void SetHostname() => SetHostname(null);
 
-    internal string? GetHostname() => _hostname;
+    public string? GetHostname() => _hostname;
 
-    internal void SetHostname(string? hostname) => _hostname = string.IsNullOrWhiteSpace(hostname) ? null : hostname;
+    public void SetHostname(string? hostname) => _hostname = string.IsNullOrWhiteSpace(hostname) ? null : hostname;
 
     public LogFlake(IOptions<LogFlakeOptions> logFlakeOptions, IHttpClientFactory httpClientFactory)
     {
