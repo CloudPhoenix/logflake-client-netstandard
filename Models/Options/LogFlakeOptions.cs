@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace NLogFlake.Models.Options;
 
-internal sealed class LogFlakeOptions
+public sealed class LogFlakeOptions
 {
     public const string SectionName = "LogFlake";
 
