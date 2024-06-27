@@ -44,6 +44,18 @@ public class LogFlake : ILogFlake
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
     }
 
+    public LogFlake(LogFlakeOptions logFlakeOptions, IHttpClientFactory httpClientFactory)
+    {
+        AppId = logFlakeOptions.AppId!;
+
+        Server = logFlakeOptions.Endpoint ?? new Uri(ServersConstants.PRODUCTION);
+
+        LogsProcessorThread = new Thread(LogsProcessor);
+        LogsProcessorThread.Start();
+
+        _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
+    }
+
     ~LogFlake() => Shutdown();
 
     public void Shutdown()
