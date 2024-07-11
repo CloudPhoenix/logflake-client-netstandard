@@ -15,8 +15,6 @@ public static class IServiceCollectionExtensions
 
         services.AddHttpClient(HttpClientConstants.ClientName, ConfigureClient);
 
-        services.AddScoped<ICorrelationService, CorrelationService>();
-
         services.AddSingleton<ILogFlake, LogFlake>();
         services.AddSingleton<ILogFlakeService, LogFlakeService>();
 
