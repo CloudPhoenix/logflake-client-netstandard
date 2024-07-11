@@ -1,32 +1,33 @@
-﻿using Newtonsoft.Json;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace NLogFlake.Models;
 
 internal class LogObject
 {
-    [JsonProperty("datetime")]
+    [JsonPropertyName("datetime")]
     public DateTime Date = DateTime.UtcNow;
 
-    [JsonProperty("hostname")]
+    [JsonPropertyName("hostname")]
     public string? Hostname { get; set; }
 
-    [JsonProperty("level")]
+    [JsonPropertyName("level")]
     public LogLevels Level { get; set; }
 
-    [JsonProperty("content")]
+    [JsonPropertyName("content")]
     public string? Content { get; set; }
 
-    [JsonProperty("correlation")]
+    [JsonPropertyName("correlation")]
     public string? Correlation { get; set; }
 
-    [JsonProperty("params")]
+    [JsonPropertyName("params")]
     public Dictionary<string, object>? Parameters { get; set; }
 
-    [JsonProperty("label")]
+    [JsonPropertyName("label")]
     public string? Label { get; set; }
 
-    [JsonProperty("duration")]
+    [JsonPropertyName("duration")]
     public long Duration { get; set; }
 
-    public override string ToString() => JsonConvert.SerializeObject(this);
+    public override string ToString() => JsonSerializer.Serialize(this);
 }
