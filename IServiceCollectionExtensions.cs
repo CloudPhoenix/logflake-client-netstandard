@@ -15,8 +15,6 @@ public static class IServiceCollectionExtensions
 
         services.AddHttpClient(HttpClientConstants.ClientName, ConfigureClient);
 
-        services.AddScoped<ICorrelationService, CorrelationService>();
-
         services.AddSingleton<ILogFlake, LogFlake>();
         services.AddSingleton<ILogFlakeService, LogFlakeService>();
 
@@ -27,6 +25,6 @@ public static class IServiceCollectionExtensions
     {
         client.Timeout = TimeSpan.FromSeconds(HttpClientConstants.PostTimeoutSeconds);
         client.DefaultRequestHeaders.Add("Accept", "application/json");
-        client.DefaultRequestHeaders.Add("User-Agent", "logflake-client-netstandard/1.5.7");
+        client.DefaultRequestHeaders.Add("User-Agent", "logflake-client-netstandard/1.6.0");
     }
 }

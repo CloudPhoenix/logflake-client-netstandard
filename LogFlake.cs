@@ -44,6 +44,7 @@ public class LogFlake : ILogFlake
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
     }
 
+    [Obsolete("Do not use this constructor, if you cannot instantiate with Dependency Injection, use the .NET Framework package.", error: true)]
     public LogFlake(LogFlakeOptions logFlakeOptions, IHttpClientFactory httpClientFactory)
     {
         AppId = logFlakeOptions.AppId!;
